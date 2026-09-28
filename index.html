@@ -190,6 +190,13 @@
         <div class="pill" data-value="\n">줄바꿈</div>
       </div>
     </div>
+    <div class="opt-group">
+      <span class="opt-title">자동 정리</span>
+      <div class="pill-group" id="cleanupMode">
+        <div class="pill active" data-value="on">괄호/의무기간 문구 제거</div>
+        <div class="pill" data-value="off">원문 그대로</div>
+      </div>
+    </div>
   </div>
 
   <div class="result-label">
@@ -197,7 +204,7 @@
     <button class="copy" id="copyBtn">복사하기</button>
   </div>
   <div class="result-box" id="result">내용을 입력하면 여기에 자동으로 나타납니다.</div>
-  <div class="hint">자가관리/방문관리 내용이 완전히 동일하면 라벨 없이 한 줄로 합쳐집니다.</div>
+  <div class="hint">자가관리/방문관리 내용이 완전히 동일하면 라벨 없이 한 줄로 합쳐집니다. "괄호/의무기간 문구 제거"가 켜져 있으면 입력한 괄호 안 내용과 "N년의무시" 같은 조건 문구는 자동으로 빠집니다.</div>
 </div>
 
 <div class="toast" id="toast">복사되었습니다</div>
@@ -209,11 +216,13 @@
   const resultBox = document.getElementById('result');
   const labelModeGroup = document.getElementById('labelMode');
   const separatorGroup = document.getElementById('separator');
+  const cleanupModeGroup = document.getElementById('cleanupMode');
   const copyBtn = document.getElementById('copyBtn');
   const toast = document.getElementById('toast');
 
   let labelMode = 'full';
   let separator = ' / ';
+  let cleanupMode = 'on';
 
   function setupPillGroup(group, onSelect) {
     group.querySelectorAll('.pill').forEach(pill => {
@@ -228,10 +237,23 @@
 
   setupPillGroup(labelModeGroup, v => labelMode = v);
   setupPillGroup(separatorGroup, v => separator = v);
+  setupPillGroup(cleanupModeGroup, v => cleanupMode = v);
+
+  // 괄호 안 내용(기간 등)과 "5년의무시" / "60개월 의무시" 같은 조건 문구를 제거하고 핵심 혜택만 남긴다
+  function cleanContent(text) {
+    if (!text) return text;
+    let result = text.replace(/\([^)]*\)/g, '');
+    if (cleanupMode === 'on') {
+      result = result.replace(/\d+\s*(?:년|개월)\s*의무\s*시\s*/g, '');
+    }
+    result = result.replace(/\s{2,}/g, ' ');
+    result = result.replace(/^[,\s]+|[,\s]+$/g, '');
+    return result.trim();
+  }
 
   function generate() {
-    const self = selfInput.value.trim();
-    const visit = visitInput.value.trim();
+    const self = cleanContent(selfInput.value.trim());
+    const visit = cleanContent(visitInput.value.trim());
     const period = periodInput.value.trim();
     const periodText = period ? ` (${period})` : '';
 
