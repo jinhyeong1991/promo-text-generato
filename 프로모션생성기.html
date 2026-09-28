@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>프로모션 문구 생성기</title>
+<style>
+  :root {
+    --bg: #1b1d22;
+    --panel: #24272e;
+    --border: #383c45;
+    --text: #eceef1;
+    --muted: #9aa0ab;
+    --accent: #ff7a30;
+    --accent-dim: #4a2f1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 28px 32px;
+  }
+  h1 {
+    font-size: 19px;
+    margin: 0 0 4px;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 24px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 18px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: #1b1d22;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+  }
+  .row > div { flex: 1; }
+  .options {
+    display: flex;
+    gap: 20px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .opt-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .opt-group .opt-title {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .pill-group {
+    display: flex;
+    gap: 6px;
+  }
+  .pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #1b1d22;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .pill.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: #ffb27a;
+  }
+  .result-box {
+    margin-top: 26px;
+    background: #1b1d22;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 24px;
+    white-space: pre-line;
+    word-break: keep-all;
+  }
+  .result-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 22px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  button.copy {
+    background: var(--accent);
+    color: #1b1d22;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.copy:active { transform: scale(0.97); }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #2f333c;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>프로모션 문구 생성기</h1>
+  <p class="sub">자가관리 / 방문관리 내용이 같으면 하나로, 다르면 구분해서 자동으로 조합합니다.</p>
+
+  <label for="selfContent">자가관리 프로모션 내용</label>
+  <input type="text" id="selfContent" placeholder="예: 5년의무시 3개월면제" />
+
+  <label for="visitContent">방문관리 프로모션 내용</label>
+  <input type="text" id="visitContent" placeholder="예: 5년의무시 4개월반값, 6년의무시 6개월반값" />
+
+  <label for="period">기간</label>
+  <input type="text" id="period" placeholder="예: 8/27~9/22" />
+
+  <div class="options">
+    <div class="opt-group">
+      <span class="opt-title">라벨 표기</span>
+      <div class="pill-group" id="labelMode">
+        <div class="pill active" data-value="full">자가관리 / 방문관리</div>
+        <div class="pill" data-value="short">자가 / 방문</div>
+      </div>
+    </div>
+    <div class="opt-group">
+      <span class="opt-title">구분자</span>
+      <div class="pill-group" id="separator">
+        <div class="pill active" data-value=" / ">/</div>
+        <div class="pill" data-value=" · ">·</div>
+        <div class="pill" data-value="\n">줄바꿈</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-label">
+    <span>생성 결과</span>
+    <button class="copy" id="copyBtn">복사하기</button>
+  </div>
+  <div class="result-box" id="result">내용을 입력하면 여기에 자동으로 나타납니다.</div>
+  <div class="hint">자가관리/방문관리 내용이 완전히 동일하면 라벨 없이 한 줄로 합쳐집니다.</div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다</div>
+
+<script>
+  const selfInput = document.getElementById('selfContent');
+  const visitInput = document.getElementById('visitContent');
+  const periodInput = document.getElementById('period');
+  const resultBox = document.getElementById('result');
+  const labelModeGroup = document.getElementById('labelMode');
+  const separatorGroup = document.getElementById('separator');
+  const copyBtn = document.getElementById('copyBtn');
+  const toast = document.getElementById('toast');
+
+  let labelMode = 'full';
+  let separator = ' / ';
+
+  function setupPillGroup(group, onSelect) {
+    group.querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        onSelect(pill.dataset.value);
+        generate();
+      });
+    });
+  }
+
+  setupPillGroup(labelModeGroup, v => labelMode = v);
+  setupPillGroup(separatorGroup, v => separator = v);
+
+  function generate() {
+    const self = selfInput.value.trim();
+    const visit = visitInput.value.trim();
+    const period = periodInput.value.trim();
+    const periodText = period ? ` (${period})` : '';
+
+    if (!self && !visit) {
+      resultBox.textContent = '내용을 입력하면 여기에 자동으로 나타납니다.';
+      return;
+    }
+
+    if (self && visit && self === visit) {
+      resultBox.textContent = `${self}${periodText}`;
+      return;
+    }
+
+    const selfLabel = labelMode === 'full' ? '자가관리' : '자가';
+    const visitLabel = labelMode === 'full' ? '방문관리' : '방문';
+    const sep = separator === '\\n' ? '\n' : separator;
+
+    const parts = [];
+    if (self) parts.push(`${selfLabel} ${self}`);
+    if (visit) parts.push(`${visitLabel} ${visit}`);
+
+    resultBox.textContent = parts.join(sep) + periodText;
+  }
+
+  [selfInput, visitInput, periodInput].forEach(el => {
+    el.addEventListener('input', generate);
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const text = resultBox.textContent;
+    if (!text || text.startsWith('내용을 입력하면')) return;
+    navigator.clipboard.writeText(text).then(() => {
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1400);
+    }).catch(() => {
+      const range = document.createRange();
+      range.selectNode(resultBox);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1400);
+    });
+  });
+</script>
+
+</body>
+</html>
