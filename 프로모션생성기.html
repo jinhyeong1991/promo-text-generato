@@ -240,6 +240,23 @@
   setupPillGroup(cleanupModeGroup, v => cleanupMode = v);
 
   // 괄호 안 내용(기간 등)과 "5년의무시" / "60개월 의무시" 같은 조건 문구를 제거하고 핵심 혜택만 남긴다
+  // "4개월반값, 6개월반값" 처럼 숫자만 다르고 나머지 문구가 같은 항목들은 "4~6개월반값"으로 합친다
+  function mergeNumericRange(text) {
+    const parts = text.split(',').map(p => p.trim()).filter(Boolean);
+    if (parts.length < 2) return text;
+
+    const matches = parts.map(p => p.match(/^(\d+)(.*)$/));
+    if (matches.some(m => !m)) return text;
+
+    const suffix = matches[0][2];
+    if (!matches.every(m => m[2] === suffix)) return text;
+
+    const nums = matches.map(m => parseInt(m[1], 10));
+    const min = Math.min(...nums);
+    const max = Math.max(...nums);
+    return `${min}~${max}${suffix}`;
+  }
+
   function cleanContent(text) {
     if (!text) return text;
     let result = text.replace(/\([^)]*\)/g, '');
@@ -248,7 +265,11 @@
     }
     result = result.replace(/\s{2,}/g, ' ');
     result = result.replace(/^[,\s]+|[,\s]+$/g, '');
-    return result.trim();
+    result = result.trim();
+    if (cleanupMode === 'on') {
+      result = mergeNumericRange(result);
+    }
+    return result;
   }
 
   function generate() {
